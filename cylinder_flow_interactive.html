@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cylinder Flow - Outer to Inner Surface</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 350px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        #arrow-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:hover {
+            background: linear-gradient(45deg, #45a049, #4CAF50);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group h4 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .slider-container {
+            margin: 10px 0;
+        }
+        
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .color-picker {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px 0;
+        }
+        
+        .status {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 12px;
+            max-width: 200px;
+        }
+        
+        h3 {
+            margin: 0 0 10px 0;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+        
+        p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #ccc;
+        }
+        
+        .arrow-controls {
+            background: rgba(255, 193, 7, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="info">
+            <h3>Cylinder Flow Visualization</h3>
+            <p>Arrows flow on outer surface moving upward, then transition to inner surface, showing flow from outside to inside!</p>
+        </div>
+        
+        <div id="controls">
+            <div class="control-group">
+                <h4>Display</h4>
+                <button onclick="toggleWireframe()">Toggle Wireframe</button>
+                <button onclick="toggleAutoRotate()">Auto Rotate</button>
+                <button onclick="resetView()">Reset View</button>
+            </div>
+            
+            <div class="control-group arrow-controls">
+                <h4>Arrows</h4>
+                <button onclick="toggleArrows()">Toggle Arrows</button>
+                <button onclick="toggleArrowAnimation()">Toggle Animation</button>
+            </div>
+            
+            <div class="control-group">
+                <h4>Animation</h4>
+                <div class="slider-container">
+                    <label>Rotation Speed</label>
+                    <input type="range" id="rotationSpeed" min="0" max="0.02" step="0.001" value="0.005" onchange="updateRotationSpeed(this.value)">
+                </div>
+                <div class="slider-container">
+                    <label>Arrow Speed: <span id="arrowSpeedValue">0.03</span></label>
+                    <input type="range" id="arrowSpeed" min="0.01" max="0.1" step="0.01" value="0.03" onchange="updateArrowSpeed(this.value)">
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="number" id="arrowSpeedInput" min="0.001" step="0.001" value="0.03" onchange="updateArrowSpeedFromInput(this.value)" onkeypress="if(event.key==='Enter') updateArrowSpeedFromInput(this.value)" placeholder="Enter speed" style="flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #555; background: #222; color: white; font-size: 14px;">
+                        <button onclick="updateArrowSpeedFromInput(document.getElementById('arrowSpeedInput').value)" style="padding: 8px 15px; background: #4CAF50; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 12px;">Apply</button>
+                    </div>
+                    <div style="font-size: 11px; color: #888; margin-top: 5px;">No upper limit!</div>
+                </div>
+                <div class="slider-container">
+                    <label>Cylinder Wall Gap</label>
+                    <input type="range" id="wallGap" min="0.2" max="1.0" step="0.1" value="0.4" onchange="updateWallGap(this.value)">
+                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Control visibility of transition</div>
+                </div>
+                <div class="slider-container">
+                    <label>Scale</label>
+                    <input type="range" id="scale" min="0.5" max="3" step="0.1" value="1" onchange="updateScale(this.value)">
+                </div>
+            </div>
+        </div>
+        
+        <div id="arrow-controls">
+            <div class="control-group arrow-controls">
+                <h4>Arrow Settings</h4>
+                <div class="slider-container">
+                    <label>Number of Arrows: <span id="arrowCountValue">150</span></label>
+                    <input type="range" id="arrowCount" min="10" max="500" step="10" value="150" onchange="updateArrowCount(this.value)">
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="number" id="arrowCountInput" min="1" step="1" value="150" onchange="updateArrowCountFromInput(this.value)" onkeypress="if(event.key==='Enter') updateArrowCountFromInput(this.value)" placeholder="Enter number" style="flex: 1; padding: 8px; border-radius: 5px; border: 1px solid #555; background: #222; color: white; font-size: 14px;">
+                        <button onclick="updateArrowCountFromInput(document.getElementById('arrowCountInput').value)" style="padding: 8px 15px; background: #4CAF50; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 12px;">Apply</button>
+                    </div>
+                    <div style="font-size: 11px; color: #888; margin-top: 5px;">Enter any number for unlimited arrows!</div>
+                </div>
+                
+                <div class="slider-container">
+                    <label>Arrow Size: <span id="arrowSizeValue">0.15</span></label>
+                    <input type="range" id="arrowSize" min="0.05" max="0.5" step="0.05" value="0.15" onchange="updateArrowSize(this.value)">
+                </div>
+                
+                <label>Outer Surface Arrow Color</label>
+                <input type="color" id="arrowColor" class="color-picker" value="#ffff00" onchange="updateArrowColor(this.value)">
+                
+                <label>Inner Surface Arrow Color</label>
+                <input type="color" id="innerArrowColor" class="color-picker" value="#00ffff" onchange="updateInnerArrowColor(this.value)">
+                
+                <div class="slider-container">
+                    <label>Arrow Opacity</label>
+                    <input type="range" id="arrowOpacity" min="0.1" max="1" step="0.1" value="0.9" onchange="updateArrowOpacity(this.value)">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h4>Cylinder Material</h4>
+                <button onclick="changeMaterial('phong')">Phong</button>
+                <button onclick="changeMaterial('lambert')">Lambert</button>
+                <button onclick="changeMaterial('basic')">Basic</button>
+                <button onclick="changeMaterial('standard')">Standard</button>
+            </div>
+            
+            <div class="control-group">
+                <h4>Cylinder Transparency</h4>
+                <div class="slider-container">
+                    <label>Opacity: <span id="opacityValue">0.8</span></label>
+                    <input type="range" id="opacity" min="0" max="1" step="0.05" value="0.8" onchange="updateOpacity(this.value)">
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <button onclick="setOpacity(0)" style="padding: 5px 10px; font-size: 11px;">Invisible</button>
+                        <button onclick="setOpacity(0.3)" style="padding: 5px 10px; font-size: 11px;">Very Transparent</button>
+                        <button onclick="setOpacity(0.8)" style="padding: 5px 10px; font-size: 11px;">Default</button>
+                        <button onclick="setOpacity(1)" style="padding: 5px 10px; font-size: 11px;">Opaque</button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <label>Shininess</label>
+                    <input type="range" id="shininess" min="0" max="200" step="10" value="100" onchange="updateShininess(this.value)">
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h4>Cylinder Color</h4>
+                <input type="color" id="cylinderColor" class="color-picker" value="#0088ff" onchange="updateCylinderColor(this.value)">
+            </div>
+            
+            <div class="control-group">
+                <h4>Lighting</h4>
+                <div class="slider-container">
+                    <label>Ambient Light</label>
+                    <input type="range" id="ambientLight" min="0" max="1" step="0.1" value="0.4" onchange="updateAmbientLight(this.value)">
+                </div>
+                <div class="slider-container">
+                    <label>Directional Light</label>
+                    <input type="range" id="directionalLight" min="0" max="2" step="0.1" value="0.8" onchange="updateDirectionalLight(this.value)">
+                </div>
+            </div>
+        </div>
+        
+        <div class="status" id="status">
+            Ready
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let cylinderMesh;
+        let ambientLight, directionalLight;
+        let isWireframe = false;
+        let autoRotate = false;
+        let rotationSpeed = 0.005;
+        let currentMaterial = 'phong';
+        let currentColor = 0x0088ff;
+        let currentOpacity = 0.8;
+        let currentShininess = 100;
+        
+        // Arrow system
+        let arrows = [];
+        let arrowGroup = new THREE.Group();
+        let showArrows = true;
+        let animateArrows = true;
+        let arrowSpeed = 0.03;
+        let animationTime = 0;
+        let numArrows = 150;
+        let arrowSize = 0.15;
+        let arrowColor = 0xffff00;
+        let innerArrowColor = 0x00ffff;
+        let arrowOpacity = 0.9;
+        
+        // Cylinder parameters - hollow cylinder with visible gap
+        const cylinderRadius = 2;
+        const cylinderHeight = 6;
+        let cylinderInnerRadius = 1.6; // Visible gap to see transition (0.4 unit gap)
+        let wallGapValue = 0.4;
+
+        function init() {
+            // Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a0a);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(8, 6, 8);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.getElementById('container').appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;
+            controls.enablePan = true;
+            controls.autoRotate = false;
+            controls.autoRotateSpeed = 2;
+
+            // Enhanced lighting
+            ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(ambientLight);
+
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(10, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+
+            // Add additional lights for better illumination
+            const pointLight1 = new THREE.PointLight(0x0088ff, 0.3, 50);
+            pointLight1.position.set(-10, 5, -10);
+            scene.add(pointLight1);
+
+            const pointLight2 = new THREE.PointLight(0xff8800, 0.3, 50);
+            pointLight2.position.set(10, -5, 10);
+            scene.add(pointLight2);
+
+            // Create the cylinder
+            createCylinder();
+            createArrows();
+
+            // Start animation
+            animate();
+
+            // Handle window resize
+            window.addEventListener('resize', onWindowResize, false);
+            
+            updateStatus('Cylinder flow visualization loaded');
+        }
+
+        function createCylinder() {
+            // Create outer cylinder shell
+            const outerGeometry = new THREE.CylinderGeometry(cylinderRadius, cylinderRadius, cylinderHeight, 64, 1, true);
+            const innerGeometry = new THREE.CylinderGeometry(cylinderInnerRadius, cylinderInnerRadius, cylinderHeight, 64, 1, true);
+            
+            const material = createMaterial();
+            
+            const outerMesh = new THREE.Mesh(outerGeometry, material);
+            outerMesh.position.y = 0;
+            
+            const innerMesh = new THREE.Mesh(innerGeometry, material.clone());
+            innerMesh.position.y = 0;
+            
+            cylinderMesh = new THREE.Group();
+            cylinderMesh.add(outerMesh);
+            cylinderMesh.add(innerMesh);
+            cylinderMesh.castShadow = true;
+            cylinderMesh.receiveShadow = true;
+            
+            scene.add(cylinderMesh);
+        }
+
+        function createMaterial() {
+            const color = new THREE.Color(currentColor);
+            
+            const materialOptions = {
+                transparent: true,
+                opacity: currentOpacity,
+                side: THREE.DoubleSide,
+                wireframe: isWireframe
+            };
+            
+            switch(currentMaterial) {
+                case 'phong':
+                    return new THREE.MeshPhongMaterial({
+                        ...materialOptions,
+                        color: color,
+                        shininess: currentShininess
+                    });
+                case 'lambert':
+                    return new THREE.MeshLambertMaterial({
+                        ...materialOptions,
+                        color: color
+                    });
+                case 'basic':
+                    return new THREE.MeshBasicMaterial({
+                        ...materialOptions,
+                        color: color
+                    });
+                case 'standard':
+                    return new THREE.MeshStandardMaterial({
+                        ...materialOptions,
+                        color: color,
+                        metalness: 0.1,
+                        roughness: 0.3
+                    });
+                default:
+                    return new THREE.MeshPhongMaterial({
+                        ...materialOptions,
+                        color: color,
+                        shininess: currentShininess
+                    });
+            }
+        }
+
+        // Get point on cylinder surface (outer or inner)
+        function getCylinderPoint(height, angle, isInner = false) {
+            const radius = isInner ? cylinderInnerRadius : cylinderRadius;
+            const y = height - cylinderHeight / 2;
+            const x = radius * Math.cos(angle);
+            const z = radius * Math.sin(angle);
+            return new THREE.Vector3(x, y, z);
+        }
+
+        // Get tangent vector for flow direction on cylinder
+        function getCylinderTangent(height, angle, isInner) {
+            // When moving upward on outer surface, tangent points up
+            // When on inner surface, still moving upward
+            const tangent = new THREE.Vector3(0, 1, 0).normalize();
+            return tangent;
+        }
+
+        // Get surface normal for cylinder
+        function getCylinderNormal(height, angle, isInner) {
+            const radius = isInner ? cylinderInnerRadius : cylinderRadius;
+            const normal = new THREE.Vector3(
+                Math.cos(angle),
+                0,
+                Math.sin(angle)
+            );
+            if (isInner) normal.multiplyScalar(-1); // Point inward for inner surface
+            return normal.normalize();
+        }
+
+        function createArrows() {
+            // Remove old arrows
+            if (arrowGroup) {
+                scene.remove(arrowGroup);
+                arrowGroup.children.forEach(child => child.geometry.dispose());
+                arrowGroup.children.forEach(child => child.material.dispose());
+            }
+            
+            arrowGroup = new THREE.Group();
+            arrows = [];
+            
+            for (let i = 0; i < numArrows; i++) {
+                // Uniform distribution around cylinder - spread arrows evenly
+                const angle = (i / numArrows) * Math.PI * 2;
+                
+                // Start all arrows on outer surface at different heights to prevent clustering
+                const height = (i / numArrows) * cylinderHeight;
+                const isInner = false; // All start on outer surface
+                
+                const arrow = createArrow(isInner);
+                
+                arrow.userData = {
+                    height: height,
+                    angle: angle,
+                    isInner: isInner, // All start on outer surface
+                    speed: 0.01 + Math.random() * 0.01,
+                    isTransitioning: false,
+                    transitionType: 'none', // 'none', 'edge-top', 'edge-bottom'
+                    edgeProgress: 0, // Progress along the cylinder thickness/edge
+                    rotationAngle: 0 // Current rotation during transition
+                };
+                
+                arrows.push(arrow);
+                arrowGroup.add(arrow);
+            }
+            
+            scene.add(arrowGroup);
+            arrowGroup.visible = showArrows;
+        }
+
+        function createArrow(isInner = false) {
+            // Create simple 3-line arrow geometry
+            const arrowLength = arrowSize;
+            const arrowHeadLength = arrowSize * 0.33;
+            const arrowWidth = arrowSize * 0.13;
+            
+            const points = [];
+            
+            // Main body line (vertical)
+            points.push(new THREE.Vector3(0, 0, 0));
+            points.push(new THREE.Vector3(0, arrowLength, 0));
+            
+            // Top line (arrow head left)
+            points.push(new THREE.Vector3(-arrowWidth, arrowLength - arrowHeadLength, 0));
+            
+            // Top line (arrow head right)
+            points.push(new THREE.Vector3(arrowWidth, arrowLength - arrowHeadLength, 0));
+            
+            // Close the arrow head
+            points.push(new THREE.Vector3(0, arrowLength, 0));
+            
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            
+            // Use different color based on surface
+            const color = isInner ? innerArrowColor : arrowColor;
+            
+            const material = new THREE.LineBasicMaterial({
+                color: color,
+                linewidth: 2,
+                transparent: true,
+                opacity: arrowOpacity
+            });
+            
+            const arrow = new THREE.Line(geometry, material);
+            arrow.userData.isInner = isInner;
+            
+            return arrow;
+        }
+
+        function updateArrows() {
+            if (!animateArrows) return;
+            
+            animationTime += arrowSpeed;
+            
+            arrows.forEach((arrow, i) => {
+                const userData = arrow.userData;
+                
+                // Handle arrow traveling through the cylinder thickness at the edge
+                if (userData.isTransitioning && userData.transitionType !== 'none') {
+                    userData.edgeProgress += arrowSpeed * userData.speed * 2; // Speed through thickness
+                    
+                    // Gradually rotate 180 degrees during traversal
+                    userData.rotationAngle = userData.edgeProgress * 180; // 0 to 180 degrees
+                    
+                    if (userData.edgeProgress >= 1) {
+                        // Thickness traversal complete - switch to new surface
+                        userData.isTransitioning = false;
+                        userData.transitionType = 'none';
+                        userData.edgeProgress = 0;
+                        userData.rotationAngle = 0;
+                        userData.isInner = !userData.isInner; // Flip surface
+                        
+                        // Update color based on new surface
+                        if (userData.isInner) {
+                            arrow.material.color.setHex(innerArrowColor);
+                        } else {
+                            arrow.material.color.setHex(arrowColor);
+                        }
+                    } else {
+                        // Arrow is traveling through the thickness (from outer to inner or vice versa)
+                        const outerRadius = cylinderRadius;
+                        const innerRadius = cylinderInnerRadius;
+                        const wallThickness = outerRadius - innerRadius;
+                        
+                        // Interpolate radius based on progress through thickness
+                        let currentRadius;
+                        if (userData.transitionType === 'edge-top') {
+                            // Moving from outer to inner at top
+                            currentRadius = outerRadius - (wallThickness * userData.edgeProgress);
+                        } else {
+                            // Moving from inner to outer at bottom
+                            currentRadius = innerRadius + (wallThickness * userData.edgeProgress);
+                        }
+                        
+                        const edgeHeight = userData.transitionType === 'edge-top' ? cylinderHeight : 0;
+                        
+                        // Keep same angle, just move through radius
+                        const x = currentRadius * Math.cos(userData.angle);
+                        const z = currentRadius * Math.sin(userData.angle);
+                        const y = edgeHeight - cylinderHeight / 2;
+                        
+                        arrow.position.set(x, y, z);
+                        
+                        // Normal points radially (inward or outward depending on direction)
+                        const normal = new THREE.Vector3(Math.cos(userData.angle), 0, Math.sin(userData.angle)).normalize();
+                        
+                        // Tangent points in the direction of travel (still vertical during transition)
+                        const tangent = new THREE.Vector3(0, userData.isInner ? -1 : 1, 0);
+                        
+                        const perpendicular = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+                        const matrix = new THREE.Matrix4();
+                        matrix.makeBasis(perpendicular, normal, tangent);
+                        arrow.setRotationFromMatrix(matrix);
+                        arrow.rotateX(Math.PI / 2);
+                        
+                        // Apply gradual 180-degree rotation during thickness traversal
+                        arrow.rotation.z = userData.rotationAngle * Math.PI / 180;
+                        
+                        return; // Skip rest during thickness traversal
+                    }
+                }
+                
+                // Move in opposite directions on outer vs inner surface
+                if (!userData.isInner) {
+                    // Outer surface: move upward
+                    userData.height += arrowSpeed * userData.speed;
+                    
+                    // When arrow reaches top edge, start crawling along the edge
+                    if (userData.height >= cylinderHeight && !userData.isTransitioning) {
+                        userData.height = cylinderHeight;
+                        userData.isTransitioning = true;
+                        userData.transitionType = 'edge-top'; // Crawling on top edge
+                        userData.edgeProgress = 0;
+                    }
+                } else {
+                    // Inner surface: move downward
+                    userData.height -= arrowSpeed * userData.speed;
+                    
+                    // When arrow reaches bottom edge, start crawling along the edge
+                    if (userData.height <= 0 && !userData.isTransitioning) {
+                        userData.height = 0;
+                        userData.isTransitioning = true;
+                        userData.transitionType = 'edge-bottom'; // Crawling on bottom edge
+                        userData.edgeProgress = 0;
+                    }
+                }
+                
+                // Clamp height to valid range
+                userData.height = Math.max(0, Math.min(cylinderHeight, userData.height));
+                
+                // Get position on cylinder
+                const position = getCylinderPoint(userData.height, userData.angle, userData.isInner);
+                
+                // Get tangent and normal
+                let tangent = getCylinderTangent(userData.height, userData.angle, userData.isInner);
+                if (userData.isInner) {
+                    tangent.multiplyScalar(-1);
+                }
+                
+                const normal = getCylinderNormal(userData.height, userData.angle, userData.isInner);
+                
+                // Position arrow on cylinder
+                arrow.position.copy(position);
+                
+                // Create perpendicular vector in the surface plane
+                const perpendicular = new THREE.Vector3().crossVectors(normal, tangent).normalize();
+                
+                if (perpendicular.length() < 0.001 || isNaN(perpendicular.x)) {
+                    perpendicular.set(1, 0, 0).normalize();
+                }
+                
+                // Orient arrow
+                const up = normal.clone();
+                const right = perpendicular.clone();
+                const forward = tangent.clone();
+                
+                const matrix = new THREE.Matrix4();
+                matrix.makeBasis(right, up, forward);
+                matrix.setPosition(position);
+                
+                arrow.setRotationFromMatrix(matrix);
+                arrow.rotateX(Math.PI / 2);
+            });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Auto rotation
+            if (autoRotate && cylinderMesh) {
+                cylinderMesh.rotation.y += rotationSpeed;
+                if (arrowGroup) {
+                    arrowGroup.rotation.y += rotationSpeed;
+                }
+            }
+            
+            // Update arrow positions
+            if (showArrows) {
+                updateArrows();
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function toggleWireframe() {
+            if (cylinderMesh) {
+                isWireframe = !isWireframe;
+                cylinderMesh.children.forEach(child => {
+                    child.material.wireframe = isWireframe;
+                });
+                updateStatus(`Wireframe: ${isWireframe ? 'ON' : 'OFF'}`);
+            }
+        }
+
+        function toggleAutoRotate() {
+            autoRotate = !autoRotate;
+            controls.autoRotate = autoRotate;
+            updateStatus(`Auto rotate: ${autoRotate ? 'ON' : 'OFF'}`);
+        }
+
+        function toggleArrows() {
+            showArrows = !showArrows;
+            if (arrowGroup) {
+                arrowGroup.visible = showArrows;
+            }
+            updateStatus(`Arrows: ${showArrows ? 'SHOWN' : 'HIDDEN'}`);
+        }
+
+        function toggleArrowAnimation() {
+            animateArrows = !animateArrows;
+            updateStatus(`Arrow animation: ${animateArrows ? 'ON' : 'OFF'}`);
+        }
+
+        function updateArrowCount(value) {
+            numArrows = parseInt(value);
+            document.getElementById('arrowCountValue').textContent = numArrows;
+            document.getElementById('arrowCountInput').value = numArrows;
+            createArrows();
+            updateStatus(`Arrows: ${numArrows}`);
+        }
+        
+        function updateArrowCountFromInput(value) {
+            const count = parseInt(value);
+            if (!isNaN(count) && count > 0) {
+                numArrows = count;
+                document.getElementById('arrowCountValue').textContent = numArrows;
+                const slider = document.getElementById('arrowCount');
+                if (slider) {
+                    slider.value = Math.min(count, 500);
+                }
+                createArrows();
+                updateStatus(`Arrows: ${numArrows}`);
+            } else {
+                updateStatus('Invalid arrow count');
+            }
+        }
+
+        function updateArrowSize(value) {
+            arrowSize = parseFloat(value);
+            document.getElementById('arrowSizeValue').textContent = arrowSize.toFixed(2);
+            createArrows();
+            updateStatus(`Arrow size: ${arrowSize.toFixed(2)}`);
+        }
+
+        function updateArrowColor(color) {
+            arrowColor = parseInt(color.replace('#', ''), 16);
+            // Update all arrows currently on outer surface
+            arrows.forEach(arrow => {
+                if (!arrow.userData.isInner) {
+                    arrow.material.color.setHex(arrowColor);
+                }
+            });
+            updateStatus(`Outer arrow color updated`);
+        }
+        
+        function updateInnerArrowColor(color) {
+            innerArrowColor = parseInt(color.replace('#', ''), 16);
+            // Update all arrows currently on inner surface
+            arrows.forEach(arrow => {
+                if (arrow.userData.isInner) {
+                    arrow.material.color.setHex(innerArrowColor);
+                }
+            });
+            updateStatus(`Inner arrow color updated`);
+        }
+
+        function updateArrowOpacity(value) {
+            arrowOpacity = parseFloat(value);
+            if (arrowGroup) {
+                arrowGroup.children.forEach(arrow => {
+                    arrow.material.opacity = arrowOpacity;
+                });
+            }
+            updateStatus(`Arrow opacity: ${Math.round(arrowOpacity * 100)}%`);
+        }
+
+        function changeMaterial(materialType) {
+            if (cylinderMesh) {
+                currentMaterial = materialType;
+                const newMaterial = createMaterial();
+                cylinderMesh.children.forEach(child => {
+                    child.material = newMaterial.clone();
+                });
+                updateStatus(`Material: ${materialType.toUpperCase()}`);
+            }
+        }
+
+        function updateCylinderColor(color) {
+            if (cylinderMesh) {
+                currentColor = parseInt(color.replace('#', ''), 16);
+                cylinderMesh.children.forEach(child => {
+                    child.material.color.setHex(currentColor);
+                });
+                updateStatus(`Cylinder color updated`);
+            }
+        }
+
+        function updateOpacity(value) {
+            if (cylinderMesh) {
+                currentOpacity = parseFloat(value);
+                cylinderMesh.children.forEach(child => {
+                    child.material.opacity = currentOpacity;
+                });
+                document.getElementById('opacityValue').textContent = currentOpacity.toFixed(2);
+                updateStatus(`Opacity: ${Math.round(currentOpacity * 100)}%`);
+            }
+        }
+        
+        function setOpacity(value) {
+            document.getElementById('opacity').value = value;
+            updateOpacity(value);
+        }
+
+        function updateShininess(value) {
+            if (cylinderMesh && cylinderMesh.children[0].material.shininess !== undefined) {
+                currentShininess = parseInt(value);
+                cylinderMesh.children.forEach(child => {
+                    if (child.material.shininess !== undefined) {
+                        child.material.shininess = currentShininess;
+                    }
+                });
+                updateStatus(`Shininess: ${currentShininess}`);
+            }
+        }
+
+        function updateRotationSpeed(value) {
+            rotationSpeed = parseFloat(value);
+            controls.autoRotateSpeed = rotationSpeed * 400;
+            updateStatus(`Rotation speed: ${Math.round(rotationSpeed * 1000)}`);
+        }
+
+        function updateArrowSpeed(value) {
+            arrowSpeed = parseFloat(value);
+            document.getElementById('arrowSpeedValue').textContent = arrowSpeed.toFixed(3);
+            document.getElementById('arrowSpeedInput').value = arrowSpeed;
+            updateStatus(`Arrow speed: ${arrowSpeed.toFixed(3)}`);
+        }
+        
+        function updateArrowSpeedFromInput(value) {
+            const speed = parseFloat(value);
+            if (!isNaN(speed) && speed > 0) {
+                arrowSpeed = speed;
+                document.getElementById('arrowSpeedValue').textContent = arrowSpeed.toFixed(3);
+                // Update slider to match (clamped to its max)
+                const slider = document.getElementById('arrowSpeed');
+                if (slider) {
+                    slider.value = Math.min(speed, 0.1);
+                }
+                updateStatus(`Arrow speed: ${arrowSpeed.toFixed(3)}`);
+            } else {
+                updateStatus('Invalid arrow speed');
+            }
+        }
+
+        function updateWallGap(value) {
+            wallGapValue = parseFloat(value);
+            cylinderInnerRadius = cylinderRadius - wallGapValue;
+            createCylinder();
+            updateStatus(`Wall gap: ${wallGapValue.toFixed(2)}`);
+        }
+        
+        function updateScale(value) {
+            if (cylinderMesh) {
+                const scale = parseFloat(value);
+                cylinderMesh.scale.setScalar(scale);
+                if (arrowGroup) {
+                    arrowGroup.scale.setScalar(scale);
+                }
+                updateStatus(`Scale: ${scale}x`);
+            }
+        }
+
+        function updateAmbientLight(value) {
+            if (ambientLight) {
+                ambientLight.intensity = parseFloat(value);
+                updateStatus(`Ambient light: ${Math.round(parseFloat(value) * 100)}%`);
+            }
+        }
+
+        function updateDirectionalLight(value) {
+            if (directionalLight) {
+                directionalLight.intensity = parseFloat(value);
+                updateStatus(`Directional light: ${Math.round(parseFloat(value) * 100)}%`);
+            }
+        }
+
+        function resetView() {
+            camera.position.set(8, 6, 8);
+            controls.reset();
+            if (cylinderMesh) {
+                cylinderMesh.rotation.set(0, 0, 0);
+                cylinderMesh.scale.setScalar(1);
+                if (arrowGroup) {
+                    arrowGroup.scale.setScalar(1);
+                }
+                document.getElementById('scale').value = 1;
+            }
+            updateStatus('View reset');
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            setTimeout(() => {
+                document.getElementById('status').textContent = 'Ready';
+            }, 2000);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Initialize the scene
+        init();
+    </script>
+</body>
+</html>
+
